@@ -3,6 +3,7 @@ package lib
 import (
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/dunelang/dune"
 )
@@ -174,6 +175,10 @@ func codeErrorf(code int, msg string, args []dune.Value, vm *dune.VM) (dune.Valu
 			wrap = t
 		}
 		values[i] = v
+	}
+
+	if wrap != nil {
+		msg = strings.Replace(msg, "%w", "%s", 1)
 	}
 
 	key := Translate(msg, vm)
