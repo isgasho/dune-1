@@ -14,7 +14,7 @@ import (
 	"github.com/dunelang/dune/parser"
 )
 
-const VERSION = "0.96"
+const VERSION = "0.97"
 
 var ErrFunctionNotExist = errors.New("function not found")
 

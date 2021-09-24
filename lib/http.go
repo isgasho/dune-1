@@ -2113,9 +2113,6 @@ func (*URL) Type() string {
 func (u *URL) SetField(name string, v dune.Value, vm *dune.VM) error {
 	switch name {
 	case "path":
-		if !vm.HasPermission("trusted") {
-			return ErrUnauthorized
-		}
 		if v.Type != dune.String {
 			return fmt.Errorf("invalid type. Expected string")
 		}

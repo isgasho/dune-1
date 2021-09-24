@@ -396,7 +396,16 @@ var Runtime = []dune.NativeFunction{
 				}
 			}
 
+			m.Stdout = vm.Stdout
+			m.Stdin = vm.Stdin
+			m.Stderr = vm.Stderr
+
 			m.Now = vm.Now
+
+			m.Localizer = vm.Localizer
+			m.Language = vm.Language
+			m.Location = vm.Location
+
 			m.MaxAllocations = vm.MaxAllocations
 			m.MaxFrames = vm.MaxFrames
 			m.MaxSteps = vm.MaxSteps
@@ -707,10 +716,6 @@ func (p *program) permissions(args []dune.Value, vm *dune.VM) (dune.Value, error
 }
 
 func (p *program) write(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	if err := ValidateArgs(args, dune.Object); err != nil {
 		return dune.NullValue, err
 	}
@@ -728,10 +733,6 @@ func (p *program) write(args []dune.Value, vm *dune.VM) (dune.Value, error) {
 }
 
 func (p *program) strip(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	if err := ValidateArgs(args); err != nil {
 		return dune.NullValue, err
 	}
@@ -742,10 +743,6 @@ func (p *program) strip(args []dune.Value, vm *dune.VM) (dune.Value, error) {
 }
 
 func (p *program) setResource(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	if err := ValidateArgs(args, dune.String, dune.Bytes); err != nil {
 		return dune.NullValue, err
 	}
@@ -956,9 +953,6 @@ func (m *libVM) GetField(name string, vm *dune.VM) (dune.Value, error) {
 	case "error":
 		return dune.NewObject(m.vm.Error), nil
 	case "program":
-		if !vm.HasPermission("trusted") {
-			return dune.NullValue, ErrUnauthorized
-		}
 		return dune.NewObject(&program{prog: m.vm.Program}), nil
 	case "fileSystem":
 		return dune.NewObject(NewFileSystem(m.vm.FileSystem)), nil
@@ -989,10 +983,6 @@ func (m *libVM) GetField(name string, vm *dune.VM) (dune.Value, error) {
 }
 
 func (m *libVM) SetField(name string, v dune.Value, vm *dune.VM) error {
-	if !vm.HasPermission("trusted") {
-		return ErrUnauthorized
-	}
-
 	switch name {
 	case "error":
 		switch v.Type {
@@ -1067,21 +1057,35 @@ func (m *libVM) SetField(name string, v dune.Value, vm *dune.VM) error {
 		if v.Type != dune.Int {
 			return ErrInvalidType
 		}
-		m.vm.MaxAllocations = v.ToInt()
+		i := v.ToInt()
+		if vm.MaxAllocations > 0 && vm.MaxAllocations < i {
+			return fmt.Errorf("value is too large for the current context")
+		}
+		m.vm.MaxAllocations = i
 		return nil
 
 	case "maxFrames":
 		if v.Type != dune.Int {
 			return ErrInvalidType
 		}
-		m.vm.MaxFrames = int(v.ToInt())
+
+		i := int(v.ToInt())
+		if vm.MaxFrames > 0 && vm.MaxFrames < i {
+			return fmt.Errorf("value is too large for the current context")
+		}
+		m.vm.MaxFrames = i
 		return nil
 
 	case "maxSteps":
 		if v.Type != dune.Int {
 			return ErrInvalidType
 		}
-		m.vm.MaxSteps = v.ToInt()
+
+		i := v.ToInt()
+		if vm.MaxSteps > 0 && vm.MaxSteps < i {
+			return fmt.Errorf("value is too large for the current context")
+		}
+		m.vm.MaxSteps = i
 		return nil
 	}
 
@@ -1111,10 +1115,6 @@ func (m *libVM) GetMethod(name string) dune.NativeMethod {
 }
 
 func (m *libVM) clone(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	if err := ValidateArgs(args); err != nil {
 		return dune.NullValue, err
 	}
@@ -1134,27 +1134,15 @@ func (m *libVM) resetSteps(args []dune.Value, vm *dune.VM) (dune.Value, error) {
 }
 
 func (m *libVM) stackTrace(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	s := strings.Join(m.vm.Stacktrace(), "\n")
 	return dune.NewString(s), nil
 }
 
 func (m *libVM) getGlobals(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	return dune.NewArrayValues(m.vm.Globals()), nil
 }
 
 func (m *libVM) initialize(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	if err := m.vm.Initialize(); err != nil {
 		return dune.NullValue, err
 	}
@@ -1163,10 +1151,6 @@ func (m *libVM) initialize(args []dune.Value, vm *dune.VM) (dune.Value, error) {
 }
 
 func (m *libVM) run(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	v, err := m.vm.Run(args...)
 	if err != nil {
 		return dune.NullValue, err
@@ -1175,10 +1159,6 @@ func (m *libVM) run(args []dune.Value, vm *dune.VM) (dune.Value, error) {
 }
 
 func (m *libVM) runFunc(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	l := len(args)
 	if l == 0 {
 		return dune.NullValue, fmt.Errorf("expected at least 1 parameter, got %d", l)
@@ -1226,10 +1206,6 @@ func (m *libVM) runFunc(args []dune.Value, vm *dune.VM) (dune.Value, error) {
 }
 
 func (m *libVM) getValue(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	l := len(args)
 	if l != 1 {
 		return dune.NullValue, fmt.Errorf("expected 1 parameter, got %d", l)

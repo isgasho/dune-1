@@ -395,7 +395,15 @@ func getVM(b []byte, vm *dune.VM) (*dune.VM, error) {
 		return nil, err
 	}
 
+	if err := ValidatePermissions(p, vm); err != nil {
+		return nil, err
+	}
+
 	m := dune.NewVM(p)
+
+	m.Stdout = vm.Stdout
+	m.Stdin = vm.Stdin
+	m.Stderr = vm.Stderr
 
 	m.Localizer = vm.Localizer
 	m.Language = vm.Language

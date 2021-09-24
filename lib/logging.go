@@ -220,10 +220,6 @@ func (t *logger) GetField(name string, vm *dune.VM) (dune.Value, error) {
 }
 
 func (t *logger) SetField(name string, v dune.Value, vm *dune.VM) error {
-	if !vm.HasPermission("trusted") {
-		return ErrUnauthorized
-	}
-
 	switch name {
 	case "debug":
 		if v.Type != dune.Bool {

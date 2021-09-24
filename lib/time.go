@@ -508,9 +508,8 @@ var Time = []dune.NativeFunction{
 		},
 	},
 	{
-		Name:        "time.setLocation",
-		Arguments:   1,
-		Permissions: []string{"trusted"},
+		Name:      "time.setLocation",
+		Arguments: 1,
 		Function: func(this dune.Value, args []dune.Value, vm *dune.VM) (dune.Value, error) {
 			if err := ValidateArgs(args, dune.String); err != nil {
 				return dune.NullValue, err
@@ -587,8 +586,9 @@ var Time = []dune.NativeFunction{
 		},
 	},
 	{
-		Name:      "time.sleep",
-		Arguments: 1,
+		Name:        "time.sleep",
+		Arguments:   1,
+		Permissions: []string{"sync"},
 		Function: func(this dune.Value, args []dune.Value, vm *dune.VM) (dune.Value, error) {
 			if len(args) != 1 {
 				return dune.NullValue, fmt.Errorf("expected 1 argument, got %d", len(args))

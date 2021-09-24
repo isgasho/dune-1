@@ -54,17 +54,65 @@ declare namespace bytecode {
 
 var Bytecode = []dune.NativeFunction{
 	{
-		Name:        "bytecode.compile",
-		Arguments:   -1,
-		Permissions: []string{"trusted"},
+		Name:      "bytecode.compile",
+		Arguments: -1,
 		Function: func(this dune.Value, args []dune.Value, vm *dune.VM) (dune.Value, error) {
-			return compile(args, vm)
+			if err := ValidateOptionalArgs(args, dune.String, dune.Object); err != nil {
+				return dune.NullValue, err
+			}
+
+			path := args[0].String()
+
+			var fs filesystem.FS
+
+			l := len(args)
+
+			if l > 1 {
+				filesystem, ok := args[1].ToObjectOrNil().(*FileSystemObj)
+				if !ok {
+					return dune.NullValue, fmt.Errorf("expected a filesystem, got %v", args[1])
+				}
+				fs = filesystem.FS
+			} else {
+				fs = vm.FileSystem
+			}
+
+			p, err := dune.Compile(fs, path)
+			if err != nil {
+				return dune.NullValue, fmt.Errorf("compiling %s: %w", path, err)
+			}
+
+			if err := ValidatePermissions(p, vm); err != nil {
+				return dune.NullValue, err
+			}
+
+			return dune.NewObject(&program{prog: p}), nil
 		},
 	},
 	{
-		Name:        "bytecode.hash",
-		Arguments:   -1,
-		Permissions: []string{"trusted"},
+		Name:      "bytecode.compileStr",
+		Arguments: 1,
+		Function: func(this dune.Value, args []dune.Value, vm *dune.VM) (dune.Value, error) {
+			if err := ValidateArgs(args, dune.String); err != nil {
+				return dune.NullValue, err
+			}
+			code := args[0].String()
+
+			p, err := dune.CompileStr(code)
+			if err != nil {
+				return dune.NullValue, errors.New(err.Error())
+			}
+
+			if err := ValidatePermissions(p, vm); err != nil {
+				return dune.NullValue, err
+			}
+
+			return dune.NewObject(&program{prog: p}), nil
+		},
+	},
+	{
+		Name:      "bytecode.hash",
+		Arguments: -1,
 		Function: func(this dune.Value, args []dune.Value, vm *dune.VM) (dune.Value, error) {
 			if err := ValidateOptionalArgs(args, dune.String, dune.Bool, dune.Bool, dune.Object); err != nil {
 				return dune.NullValue, err
@@ -96,27 +144,8 @@ var Bytecode = []dune.NativeFunction{
 		},
 	},
 	{
-		Name:        "bytecode.compileStr",
-		Arguments:   1,
-		Permissions: []string{"trusted"},
-		Function: func(this dune.Value, args []dune.Value, vm *dune.VM) (dune.Value, error) {
-			if err := ValidateArgs(args, dune.String); err != nil {
-				return dune.NullValue, err
-			}
-			code := args[0].String()
-
-			p, err := dune.CompileStr(code)
-			if err != nil {
-				return dune.NullValue, errors.New(err.Error())
-			}
-
-			return dune.NewObject(&program{prog: p}), nil
-		},
-	},
-	{
-		Name:        "bytecode.parseStr",
-		Arguments:   -1,
-		Permissions: []string{"trusted"},
+		Name:      "bytecode.parseStr",
+		Arguments: -1,
 		Function: func(this dune.Value, args []dune.Value, vm *dune.VM) (dune.Value, error) {
 			if err := ValidateArgs(args, dune.String); err != nil {
 				return dune.NullValue, err
@@ -132,9 +161,8 @@ var Bytecode = []dune.NativeFunction{
 		},
 	},
 	{
-		Name:        "bytecode.loadProgram",
-		Arguments:   1,
-		Permissions: []string{"trusted"},
+		Name:      "bytecode.loadProgram",
+		Arguments: 1,
 		Function: func(this dune.Value, args []dune.Value, vm *dune.VM) (dune.Value, error) {
 			if err := ValidateArgs(args, dune.Bytes); err != nil {
 				return dune.NullValue, err
@@ -149,9 +177,8 @@ var Bytecode = []dune.NativeFunction{
 		},
 	},
 	{
-		Name:        "bytecode.load",
-		Arguments:   -1,
-		Permissions: []string{"trusted"},
+		Name:      "bytecode.load",
+		Arguments: -1,
 		Function: func(this dune.Value, args []dune.Value, vm *dune.VM) (dune.Value, error) {
 			if err := ValidateOptionalArgs(args, dune.String, dune.Object); err != nil {
 				return dune.NullValue, err
@@ -186,9 +213,8 @@ var Bytecode = []dune.NativeFunction{
 		},
 	},
 	{
-		Name:        "bytecode.readProgram",
-		Arguments:   1,
-		Permissions: []string{"trusted"},
+		Name:      "bytecode.readProgram",
+		Arguments: 1,
 		Function: func(this dune.Value, args []dune.Value, vm *dune.VM) (dune.Value, error) {
 			if err := ValidateArgs(args, dune.Object); err != nil {
 				return dune.NullValue, err
@@ -208,9 +234,8 @@ var Bytecode = []dune.NativeFunction{
 		},
 	},
 	{
-		Name:        "bytecode.writeProgram",
-		Arguments:   2,
-		Permissions: []string{"trusted"},
+		Name:      "bytecode.writeProgram",
+		Arguments: 2,
 		Function: func(this dune.Value, args []dune.Value, vm *dune.VM) (dune.Value, error) {
 			if err := ValidateArgs(args, dune.Object, dune.Object); err != nil {
 				return dune.NullValue, err
@@ -257,33 +282,4 @@ func (p *astProgram) string(args []dune.Value, vm *dune.VM) (dune.Value, error) 
 		return dune.NullValue, err
 	}
 	return dune.NewString(s), nil
-}
-
-func compile(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if err := ValidateOptionalArgs(args, dune.String, dune.Object); err != nil {
-		return dune.NullValue, err
-	}
-
-	path := args[0].String()
-
-	var fs filesystem.FS
-
-	l := len(args)
-
-	if l > 1 {
-		filesystem, ok := args[1].ToObjectOrNil().(*FileSystemObj)
-		if !ok {
-			return dune.NullValue, fmt.Errorf("expected a filesystem, got %v", args[1])
-		}
-		fs = filesystem.FS
-	} else {
-		fs = vm.FileSystem
-	}
-
-	p, err := dune.Compile(fs, path)
-	if err != nil {
-		return dune.NullValue, fmt.Errorf("compiling %s: %w", path, err)
-	}
-
-	return dune.NewObject(&program{prog: p}), nil
 }

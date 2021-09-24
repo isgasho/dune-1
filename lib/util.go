@@ -7,6 +7,16 @@ import (
 	"github.com/dunelang/dune"
 )
 
+func ValidatePermissions(p *dune.Program, vm *dune.VM) error {
+	for _, perm := range p.Permissions() {
+		if !vm.HasPermission(perm) {
+			return fmt.Errorf(
+				"Can't compile code with %s permission", perm)
+		}
+	}
+	return nil
+}
+
 // validate the number of args ant type
 func ValidateOrNilArgs(args []dune.Value, t ...interface{}) error {
 	exp := len(t)

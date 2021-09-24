@@ -922,14 +922,8 @@ func (s *libDB) GetField(name string, vm *dune.VM) (dune.Value, error) {
 	case "nestTransactions":
 		return dune.NewBool(s.db.NestedTx), nil
 	case "database":
-		if !vm.HasPermission("trusted") {
-			return dune.NullValue, ErrUnauthorized
-		}
 		return dune.NewString(s.db.Database), nil
 	case "prefix":
-		if !vm.HasPermission("trusted") {
-			return dune.NullValue, ErrUnauthorized
-		}
 		return dune.NewString(s.db.Prefix), nil
 	case "namespace":
 		return dune.NewString(s.db.Namespace), nil
@@ -940,9 +934,6 @@ func (s *libDB) GetField(name string, vm *dune.VM) (dune.Value, error) {
 	case "driver":
 		return dune.NewString(s.db.Driver), nil
 	case "onExecuting":
-		if !vm.HasPermission("trusted") {
-			return dune.NullValue, ErrUnauthorized
-		}
 		return s.onExecutingFunc, nil
 	}
 	return dune.UndefinedValue, nil
@@ -951,9 +942,6 @@ func (s *libDB) GetField(name string, vm *dune.VM) (dune.Value, error) {
 func (s *libDB) SetField(name string, v dune.Value, vm *dune.VM) error {
 	switch name {
 	case "ignoreTransactions":
-		if !vm.HasPermission("trusted") {
-			return ErrUnauthorized
-		}
 		switch v.Type {
 		case dune.Bool, dune.Undefined, dune.Null:
 		default:
@@ -963,9 +951,6 @@ func (s *libDB) SetField(name string, v dune.Value, vm *dune.VM) error {
 		return nil
 
 	case "nestTransactions":
-		if !vm.HasPermission("trusted") {
-			return ErrUnauthorized
-		}
 		switch v.Type {
 		case dune.Bool, dune.Undefined, dune.Null:
 		default:
@@ -975,9 +960,6 @@ func (s *libDB) SetField(name string, v dune.Value, vm *dune.VM) error {
 		return nil
 
 	case "onExecuting":
-		if !vm.HasPermission("trusted") {
-			return ErrUnauthorized
-		}
 		switch v.Type {
 		case dune.Func:
 		case dune.Object:
@@ -992,9 +974,6 @@ func (s *libDB) SetField(name string, v dune.Value, vm *dune.VM) error {
 		return nil
 
 	case "database":
-		if !vm.HasPermission("trusted") {
-			return ErrUnauthorized
-		}
 		if s.locked {
 			return fmt.Errorf(("the database is locked"))
 		}
@@ -1016,9 +995,6 @@ func (s *libDB) SetField(name string, v dune.Value, vm *dune.VM) error {
 		return nil
 
 	case "prefix":
-		if !vm.HasPermission("trusted") {
-			return ErrUnauthorized
-		}
 		if s.locked {
 			return fmt.Errorf(("the database is locked"))
 		}
@@ -1040,9 +1016,6 @@ func (s *libDB) SetField(name string, v dune.Value, vm *dune.VM) error {
 		return nil
 
 	case "namespace":
-		if !vm.HasPermission("trusted") {
-			return ErrUnauthorized
-		}
 		if s.locked {
 			return fmt.Errorf(("the database is locked"))
 		}
@@ -1057,9 +1030,6 @@ func (s *libDB) SetField(name string, v dune.Value, vm *dune.VM) error {
 		return nil
 
 	case "locked":
-		if !vm.HasPermission("trusted") {
-			return ErrUnauthorized
-		}
 		switch v.Type {
 		case dune.Bool, dune.Undefined, dune.Null:
 		default:
@@ -1069,9 +1039,6 @@ func (s *libDB) SetField(name string, v dune.Value, vm *dune.VM) error {
 		return nil
 
 	case "readOnly":
-		if !vm.HasPermission("trusted") {
-			return ErrUnauthorized
-		}
 		if s.locked {
 			return fmt.Errorf(("the database is locked"))
 		}
@@ -1154,10 +1121,6 @@ func (s *libDB) GetMethod(name string) dune.NativeMethod {
 }
 
 func (s *libDB) setMaxOpenConns(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	if err := ValidateArgs(args, dune.Int); err != nil {
 		return dune.NullValue, err
 	}
@@ -1169,10 +1132,6 @@ func (s *libDB) setMaxOpenConns(args []dune.Value, vm *dune.VM) (dune.Value, err
 }
 
 func (s *libDB) setMaxIdleConns(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	if err := ValidateArgs(args, dune.Int); err != nil {
 		return dune.NullValue, err
 	}
@@ -1184,10 +1143,6 @@ func (s *libDB) setMaxIdleConns(args []dune.Value, vm *dune.VM) (dune.Value, err
 }
 
 func (s *libDB) setConnMaxLifetime(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	if err := ValidateArgRange(args, 1, 1); err != nil {
 		return dune.NullValue, err
 	}
@@ -1202,10 +1157,6 @@ func (s *libDB) setConnMaxLifetime(args []dune.Value, vm *dune.VM) (dune.Value, 
 }
 
 func (s *libDB) open(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	if err := ValidateOptionalArgs(args, dune.String, dune.String); err != nil {
 		return dune.NullValue, err
 	}
@@ -1243,10 +1194,6 @@ func (s *libDB) clone(args []dune.Value, vm *dune.VM) (dune.Value, error) {
 }
 
 func (s *libDB) close(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	if len(args) != 0 {
 		return dune.NullValue, fmt.Errorf("expected 0 arguments, got %d", len(args))
 	}
@@ -1319,10 +1266,6 @@ func (s *libDB) rollback(args []dune.Value, vm *dune.VM) (dune.Value, error) {
 }
 
 func (s *libDB) execRaw(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	if err := s.onExecutingRaw(args, vm); err != nil {
 		return dune.NullValue, err
 	}
@@ -1410,26 +1353,6 @@ func getExecQuery(args []dune.Value, vm *dune.VM) (sqx.Query, error) {
 		}
 	default:
 		return nil, fmt.Errorf("expected a query, got %s", a.TypeName())
-	}
-
-	// check permissions
-	switch q.(type) {
-	case *sqx.InsertQuery:
-	case *sqx.UpdateQuery:
-	case *sqx.DeleteQuery:
-	case *sqx.CreateTableQuery:
-	case *sqx.AddConstraintQuery:
-	case *sqx.AddFKQuery:
-	case *sqx.AddColumnQuery:
-	case *sqx.RenameColumnQuery:
-	case *sqx.ModifyColumnQuery:
-	case *sqx.DropTableQuery:
-	case *sqx.AlterDropQuery:
-		break
-	default:
-		if !vm.HasPermission("trusted") {
-			return nil, ErrUnauthorized
-		}
 	}
 
 	return q, nil
@@ -1567,10 +1490,6 @@ func (s *libDB) queryFirst(args []dune.Value, vm *dune.VM) (dune.Value, error) {
 }
 
 func (s *libDB) queryFirstRaw(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	if err := s.onExecutingRaw(args, vm); err != nil {
 		return dune.NullValue, err
 	}
@@ -1663,10 +1582,6 @@ func (s *libDB) queryValue(args []dune.Value, vm *dune.VM) (dune.Value, error) {
 }
 
 func (s *libDB) queryValueRaw(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	if err := s.onExecutingRaw(args, vm); err != nil {
 		return dune.NullValue, err
 	}
@@ -1763,10 +1678,6 @@ func (s *libDB) onExecutingRaw(args []dune.Value, vm *dune.VM) error {
 }
 
 func (s *libDB) hasDatabase(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	if err := ValidateArgs(args, dune.String); err != nil {
 		return dune.NullValue, err
 	}
@@ -1842,10 +1753,6 @@ func (s *libDB) columns(args []dune.Value, vm *dune.VM) (dune.Value, error) {
 		}
 
 	case 2:
-		if !vm.HasPermission("trusted") {
-			return dune.NullValue, ErrUnauthorized
-		}
-
 		dbName = parts[0]
 		table = parts[1]
 		if !validateTable(parts[1]) {
@@ -1921,10 +1828,6 @@ func (s *libDB) loadTable(args []dune.Value, vm *dune.VM) (dune.Value, error) {
 }
 
 func (s *libDB) loadTableRaw(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	if err := s.onExecutingRaw(args, vm); err != nil {
 		return dune.NullValue, err
 	}
@@ -2057,10 +1960,6 @@ func (s *libDB) queryValues(args []dune.Value, vm *dune.VM) (dune.Value, error) 
 }
 
 func (s *libDB) queryValuesRaw(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	if err := s.onExecutingRaw(args, vm); err != nil {
 		return dune.NullValue, err
 	}
@@ -2160,10 +2059,6 @@ func (s *libDB) getTable(args []dune.Value, vm *dune.VM) (*dbx.Table, error) {
 }
 
 func (s *libDB) queryRaw(args []dune.Value, vm *dune.VM) (dune.Value, error) {
-	if !vm.HasPermission("trusted") {
-		return dune.NullValue, ErrUnauthorized
-	}
-
 	if err := s.onExecutingRaw(args, vm); err != nil {
 		return dune.NullValue, err
 	}
